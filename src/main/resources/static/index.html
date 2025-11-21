@@ -3,100 +3,487 @@
 <head>
     <meta charset="UTF-8">
     <title>Mock Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
     <style>
-        .container { max-width: 1200px; margin-top: 20px; }
-        .card { margin-bottom: 20px; }
-        .rule-item { border-left: 4px solid #0d6efd; background: #f8f9fa; margin-bottom: 10px; padding: 10px; }
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --dark: #2C3E50;
+            --light: #F7F9FC;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --glass: rgba(255, 255, 255, 0.7);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .blob {
+            position: absolute;
+            filter: blur(40px);
+            opacity: 0.4;
+            animation: float 10s infinite ease-in-out;
+        }
+        .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: var(--primary); animation-delay: 0s; }
+        .blob-2 { top: 60%; right: 10%; width: 400px; height: 400px; background: var(--secondary); animation-delay: -2s; }
+        .blob-3 { bottom: 10%; left: 30%; width: 200px; height: 200px; background: var(--accent); animation-delay: -4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -50px) rotate(10deg); }
+            66% { transform: translate(-20px, 20px) rotate(-5deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            height: calc(100vh - 40px);
+        }
+
+        /* Glassmorphism Cards */
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        h1, h2, h3 { margin: 0; font-weight: 600; }
+        h1 { font-size: 2.5rem; color: var(--primary); text-shadow: 2px 2px 0px rgba(0,0,0,0.1); margin-bottom: 20px; }
+
+        /* Service List */
+        .service-list {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 10px;
+        }
+        .service-item {
+            background: white;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .service-item:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .service-item.active {
+            border-color: var(--secondary);
+            background: #E0F7FA;
+        }
+        .service-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .status-running { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .status-stopped { background: #e74c3c; }
+
+        /* Buttons */
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--primary); color: white; }
+        .btn-success { background: #2ecc71; color: white; }
+        .btn-icon { padding: 10px; border-radius: 50%; }
+        .btn-float {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            font-size: 24px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .btn-float:hover { transform: rotate(90deg); }
+
+        /* Rules Grid */
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        .rule-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s;
+            border-left: 5px solid var(--secondary);
+        }
+        .rule-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .method-badge {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+        }
+        .method-GET { background: #3498db; }
+        .method-POST { background: #2ecc71; }
+        .method-PUT { background: #f1c40f; }
+        .method-DELETE { background: #e74c3c; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 800px;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+
+        /* Form Inputs */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 500; color: #7f8c8d; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        /* Monaco Editor Container */
+        #editor-container {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #ecf0f1;
+        }
+
+        /* Settings Panel */
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+        .settings-btn:hover { transform: rotate(180deg); }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #95a5a6;
+            text-align: center;
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; color: var(--secondary); opacity: 0.5; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #95a5a6; }
     </style>
 </head>
 <body>
+
+<div class="bg-animation">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
+<div class="settings-btn" onclick="openSettings()">
+    <i class="fas fa-cog"></i>
+</div>
+
 <div class="container">
-    <h1>Mock Service Platform</h1>
-    <hr>
-    
-    <div class="row">
-        <div class="col-md-4">
-            <h3>Services <button class="btn btn-sm btn-success float-end" onclick="showCreateServiceModal()">+ New</button></h3>
-            <div class="list-group" id="serviceList">
-                <!-- Services will be loaded here -->
-            </div>
+    <!-- Sidebar -->
+    <div class="glass-panel">
+        <h1>Mock<span style="color:var(--secondary)">Platform</span></h1>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Services</h3>
+            <button class="btn btn-primary btn-sm" onclick="showCreateServiceModal()">
+                <i class="fas fa-plus"></i> New
+            </button>
         </div>
-        <div class="col-md-8">
-            <div id="serviceDetail" style="display:none;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h3 id="detailName">Service Name</h3>
-                    <div>
-                        <span id="detailStatus" class="badge bg-secondary">STOPPED</span>
-                        <button class="btn btn-sm btn-primary" onclick="toggleService()" id="btnToggle">Start</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteService()">Delete</button>
+        <div class="service-list" id="serviceList">
+            <!-- Services injected here -->
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="glass-panel" style="position: relative;">
+        <div id="serviceDetail" style="display:none; height: 100%; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h2 id="detailName" style="font-size: 2rem;">Service Name</h2>
+                    <div style="display: flex; gap: 15px; margin-top: 5px; color: #7f8c8d;">
+                        <span><i class="fas fa-network-wired"></i> Port: <span id="detailPort"></span></span>
+                        <span><i class="fas fa-folder"></i> <span id="detailContext"></span></span>
                     </div>
                 </div>
-                <p><strong>Port:</strong> <span id="detailPort"></span> | <strong>Context:</strong> <span id="detailContext"></span></p>
-                <p class="text-muted" id="detailDesc"></p>
-                
-                <hr>
-                <h4>Rules <button class="btn btn-sm btn-outline-primary float-end" onclick="showAddRuleModal()">+ Add Rule</button></h4>
-                <div id="ruleList">
-                    <!-- Rules will be loaded here -->
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnToggle" class="btn btn-primary" onclick="toggleService()">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteService()">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
-            <div id="emptyState" class="text-center text-muted mt-5">
-                <p>Select a service to view details</p>
+
+            <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Rules</h3>
+                </div>
+                <div id="ruleList" class="rules-grid">
+                    <!-- Rules injected here -->
+                </div>
             </div>
+
+            <button class="btn btn-primary btn-float" onclick="showAddRuleModal()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+            <i class="fas fa-ghost fa-bounce"></i>
+            <h3>Select a service to start mocking!</h3>
+            <p>Or create a new one to get started.</p>
         </div>
     </div>
 </div>
 
-<!-- Create Service Modal -->
-<div class="modal fade" id="serviceModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">Create Service</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form id="serviceForm">
-                    <div class="mb-3"><label>Name</label><input type="text" class="form-control" id="sName" required></div>
-                    <div class="mb-3"><label>Port</label><input type="number" class="form-control" id="sPort" required></div>
-                    <div class="mb-3"><label>Context Path</label><input type="text" class="form-control" id="sContext" value="/"></div>
-                    <div class="mb-3"><label>Description</label><textarea class="form-control" id="sDesc"></textarea></div>
-                </form>
+<!-- Service Modal -->
+<div class="modal-overlay" id="serviceModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <h2>Create Service</h2>
+        <form id="serviceForm" onsubmit="event.preventDefault(); saveService();">
+            <div class="form-group">
+                <label>Service Name</label>
+                <input type="text" id="sName" required placeholder="e.g., payment-service">
             </div>
-            <div class="modal-footer"><button type="button" class="btn btn-primary" onclick="saveService()">Save</button></div>
-        </div>
+            <div class="form-group">
+                <label>Port</label>
+                <input type="number" id="sPort" required placeholder="e.g., 9000">
+            </div>
+            <div class="form-group">
+                <label>Context Path</label>
+                <input type="text" id="sContext" value="/" placeholder="/">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="sDesc" rows="3"></textarea>
+            </div>
+            <div style="text-align: right;">
+                <button type="button" class="btn btn-light" onclick="closeModal('serviceModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Service</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- Add Rule Modal -->
-<div class="modal fade" id="ruleModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">Add Rule</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form id="ruleForm">
-                    <div class="row">
-                        <div class="col-md-4 mb-3"><label>Method</label><select class="form-control" id="rMethod"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select></div>
-                        <div class="col-md-8 mb-3"><label>URL Pattern</label><input type="text" class="form-control" id="rUrl" placeholder="/api/users/**"></div>
-                    </div>
-                    <div class="mb-3"><label>Body Regex Match (Optional)</label><input type="text" class="form-control" id="rBodyMatch"></div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-4 mb-3"><label>Response Status</label><input type="number" class="form-control" id="rStatus" value="200"></div>
-                        <div class="col-md-4 mb-3"><label>Delay (ms)</label><input type="number" class="form-control" id="rDelay" value="0"></div>
-                    </div>
-                    <div class="mb-3"><label>Response Body (SpEL supported: #{#req.method})</label><textarea class="form-control" id="rBody" rows="5"></textarea></div>
-                </form>
+<!-- Rule Modal -->
+<div class="modal-overlay" id="ruleModal">
+    <div class="modal-content">
+        <h2>Add Rule</h2>
+        <form id="ruleForm" onsubmit="event.preventDefault(); saveRule();">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                <div class="form-group">
+                    <label>Method</label>
+                    <select id="rMethod">
+                        <option>GET</option>
+                        <option>POST</option>
+                        <option>PUT</option>
+                        <option>DELETE</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>URL Pattern</label>
+                    <input type="text" id="rUrl" placeholder="/api/users/**">
+                </div>
             </div>
-            <div class="modal-footer"><button type="button" class="btn btn-primary" onclick="saveRule()">Save</button></div>
-        </div>
+            
+            <div class="form-group">
+                <label>Response Body (JSON/SpEL)</label>
+                <div id="editor-container"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label>Status Code</label>
+                    <input type="number" id="rStatus" value="200">
+                </div>
+                <div class="form-group">
+                    <label>Delay (ms)</label>
+                    <input type="number" id="rDelay" value="0">
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-light" onclick="closeModal('ruleModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Rule</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-content" style="max-width: 600px;">
+        <h2><i class="fas fa-cogs"></i> Settings</h2>
+        <form id="settingsForm" onsubmit="event.preventDefault(); saveSettings();">
+            <div class="form-group">
+                <label>Eureka URL</label>
+                <input type="text" id="setEurekaUrl" placeholder="http://localhost:8761/eureka/">
+                <small style="color: #7f8c8d;">URL of the Eureka Discovery Server</small>
+            </div>
+            <div class="form-group">
+                <label>Heartbeat Interval (seconds)</label>
+                <input type="number" id="setHeartbeat" min="5" max="300">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="setPreferIp" style="width: auto;">
+                <label style="margin: 0; cursor: pointer;" for="setPreferIp">Prefer IP Address for Registration</label>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-light" onclick="closeModal('settingsModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    // Monaco Editor Setup
+    let editor;
+    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+    require(['vs/editor/editor.main'], function() {
+        editor = monaco.editor.create(document.getElementById('editor-container'), {
+            value: '{\n  "message": "Hello World",\n  "id": "#{T(java.util.UUID).randomUUID()}"\n}',
+            language: 'json',
+            theme: 'vs-light',
+            minimap: { enabled: false },
+            automaticLayout: true,
+            scrollBeyondLastLine: false,
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: 14
+        });
+
+        // Add SpEL auto-completion
+        monaco.languages.registerCompletionItemProvider('json', {
+            provideCompletionItems: function(model, position) {
+                const textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+                if (textUntilPosition.includes('#{')) {
+                    return {
+                        suggestions: [
+                            { label: 'req.getParameter', kind: monaco.languages.CompletionItemKind.Function, insertText: "req.getParameter('${1:param}')" },
+                            { label: 'req.getHeader', kind: monaco.languages.CompletionItemKind.Function, insertText: "req.getHeader('${1:header}')" },
+                            { label: 'UUID', kind: monaco.languages.CompletionItemKind.Function, insertText: "T(java.util.UUID).randomUUID()" },
+                            { label: 'now', kind: monaco.languages.CompletionItemKind.Function, insertText: "T(java.time.Instant).now()" }
+                        ]
+                    };
+                }
+                return { suggestions: [] };
+            }
+        });
+    });
+
+    // App Logic
     let services = [];
     let currentServiceId = null;
-    const serviceModal = new bootstrap.Modal(document.getElementById('serviceModal'));
-    const ruleModal = new bootstrap.Modal(document.getElementById('ruleModal'));
 
     async function loadServices() {
         const res = await fetch('/api/services');
@@ -108,13 +495,13 @@
     function renderServiceList() {
         const list = document.getElementById('serviceList');
         list.innerHTML = services.map(s => `
-            <a href="#" class="list-group-item list-group-item-action ${s.id === currentServiceId ? 'active' : ''}" onclick="selectService('${s.id}')">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">${s.serviceName}</h5>
-                    <small>${s.running ? '🟢 Running' : '🔴 Stopped'}</small>
+            <div class="service-item ${s.id === currentServiceId ? 'active' : ''}" onclick="selectService('${s.id}')">
+                <div class="service-status ${s.running ? 'status-running' : 'status-stopped'}"></div>
+                <h4 style="margin: 0 0 5px 0;">${s.serviceName}</h4>
+                <div style="font-size: 0.9rem; color: #7f8c8d;">
+                    <i class="fas fa-plug"></i> ${s.port}
                 </div>
-                <small>Port: ${s.port}</small>
-            </a>
+            </div>
         `).join('');
     }
 
@@ -123,49 +510,59 @@
         const service = services.find(s => s.id === id);
         if (!service) return;
 
-        renderServiceList(); // Update active state
+        renderServiceList();
         document.getElementById('emptyState').style.display = 'none';
-        document.getElementById('serviceDetail').style.display = 'block';
+        document.getElementById('serviceDetail').style.display = 'flex'; // Changed to flex
 
         document.getElementById('detailName').innerText = service.serviceName;
         document.getElementById('detailPort').innerText = service.port;
         document.getElementById('detailContext').innerText = service.contextPath;
-        document.getElementById('detailDesc').innerText = service.description || '';
         
-        const statusBadge = document.getElementById('detailStatus');
         const btnToggle = document.getElementById('btnToggle');
         if (service.running) {
-            statusBadge.className = 'badge bg-success';
-            statusBadge.innerText = 'RUNNING';
-            btnToggle.innerText = 'Stop';
-            btnToggle.className = 'btn btn-sm btn-warning';
+            btnToggle.innerHTML = '<i class="fas fa-stop"></i> Stop';
+            btnToggle.className = 'btn btn-danger';
             btnToggle.onclick = () => stopService(id);
         } else {
-            statusBadge.className = 'badge bg-secondary';
-            statusBadge.innerText = 'STOPPED';
-            btnToggle.innerText = 'Start';
-            btnToggle.className = 'btn btn-sm btn-primary';
+            btnToggle.innerHTML = '<i class="fas fa-play"></i> Start';
+            btnToggle.className = 'btn btn-primary';
             btnToggle.onclick = () => startService(id);
         }
 
         const ruleList = document.getElementById('ruleList');
-        ruleList.innerHTML = (service.rules || []).map((r, idx) => `
-            <div class="rule-item">
-                <div class="d-flex justify-content-between">
-                    <strong>${r.method} ${r.urlPattern || '*'}</strong>
-                    <span class="badge bg-info">${r.responseStatus}</span>
+        ruleList.innerHTML = (service.rules || []).map(r => `
+            <div class="rule-card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span class="method-badge method-${r.method}">${r.method}</span>
+                    <span style="font-weight: bold; color: #7f8c8d;">${r.responseStatus}</span>
                 </div>
-                <div class="small text-muted">${r.bodyMatch ? 'Body Match: ' + r.bodyMatch : 'No body match'}</div>
-                <div class="mt-1 text-truncate" style="max-width: 500px;">${r.responseBody || ''}</div>
+                <div style="font-family: monospace; background: #f8f9fa; padding: 5px; border-radius: 4px; margin-bottom: 10px;">
+                    ${r.urlPattern || '*'}
+                </div>
+                <div style="font-size: 0.8rem; color: #95a5a6; max-height: 60px; overflow: hidden;">
+                    ${r.responseBody || ''}
+                </div>
             </div>
         `).join('');
     }
 
+    // Modal Functions
     function showCreateServiceModal() {
         document.getElementById('serviceForm').reset();
-        serviceModal.show();
+        document.getElementById('serviceModal').classList.add('show');
     }
 
+    function showAddRuleModal() {
+        document.getElementById('ruleForm').reset();
+        if(editor) editor.setValue('{\n  "status": "ok"\n}');
+        document.getElementById('ruleModal').classList.add('show');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('show');
+    }
+
+    // API Actions
     async function saveService() {
         const data = {
             serviceName: document.getElementById('sName').value,
@@ -180,7 +577,32 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
         });
-        serviceModal.hide();
+        closeModal('serviceModal');
+        loadServices();
+    }
+
+    async function saveRule() {
+        const service = services.find(s => s.id === currentServiceId);
+        if (!service) return;
+
+        const rule = {
+            method: document.getElementById('rMethod').value,
+            urlPattern: document.getElementById('rUrl').value,
+            responseStatus: parseInt(document.getElementById('rStatus').value),
+            delayMs: parseInt(document.getElementById('rDelay').value),
+            responseBody: editor.getValue(),
+            responseHeaders: {'Content-Type': 'application/json'}
+        };
+        
+        if (!service.rules) service.rules = [];
+        service.rules.push(rule);
+
+        await fetch(`/api/services/${currentServiceId}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(service)
+        });
+        closeModal('ruleModal');
         loadServices();
     }
 
@@ -198,42 +620,40 @@
         if (!confirm('Are you sure?')) return;
         await fetch(`/api/services/${currentServiceId}`, { method: 'DELETE' });
         currentServiceId = null;
-        document.getElementById('serviceDetail').style.display = 'none';
-        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('serviceDetail').style.display = 'none'; // Changed to none
+        document.getElementById('emptyState').style.display = 'flex'; // Changed to flex
         loadServices();
     }
 
-    function showAddRuleModal() {
-        document.getElementById('ruleForm').reset();
-        ruleModal.show();
+    // Settings Functions
+    async function openSettings() {
+        const res = await fetch('/api/settings');
+        const settings = await res.json();
+        
+        document.getElementById('setEurekaUrl').value = settings.eurekaUrl;
+        document.getElementById('setHeartbeat').value = settings.heartbeatIntervalSeconds;
+        document.getElementById('setPreferIp').checked = settings.preferIpAddress;
+        
+        document.getElementById('settingsModal').classList.add('show');
     }
 
-    async function saveRule() {
-        const service = services.find(s => s.id === currentServiceId);
-        if (!service) return;
-
-        const rule = {
-            method: document.getElementById('rMethod').value,
-            urlPattern: document.getElementById('rUrl').value,
-            bodyMatch: document.getElementById('rBodyMatch').value,
-            responseStatus: parseInt(document.getElementById('rStatus').value),
-            delayMs: parseInt(document.getElementById('rDelay').value),
-            responseBody: document.getElementById('rBody').value,
-            responseHeaders: {'Content-Type': 'application/json'}
+    async function saveSettings() {
+        const settings = {
+            eurekaUrl: document.getElementById('setEurekaUrl').value,
+            heartbeatIntervalSeconds: parseInt(document.getElementById('setHeartbeat').value),
+            preferIpAddress: document.getElementById('setPreferIp').checked
         };
-        
-        if (!service.rules) service.rules = [];
-        service.rules.push(rule);
 
-        await fetch(`/api/services/${currentServiceId}`, {
+        await fetch('/api/settings', {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(service)
+            body: JSON.stringify(settings)
         });
-        ruleModal.hide();
-        loadServices();
+        closeModal('settingsModal');
+        alert('Settings saved!');
     }
 
+    // Initial Load
     loadServices();
 </script>
 </body>

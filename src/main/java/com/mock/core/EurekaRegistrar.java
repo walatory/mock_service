@@ -1,8 +1,8 @@
 package com.mock.core;
 
 import com.mock.model.MockServiceConfig;
+import com.mock.service.SettingsService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -14,17 +14,27 @@ import java.util.Map;
 @Component
 public class EurekaRegistrar {
 
-    @Value("${eureka.client.service-url.defaultZone:http://localhost:8761/eureka/}")
-    private String eurekaUrl;
-
+    private final SettingsService settingsService;
     private final RestTemplate restTemplate = new RestTemplate();
+
+    public EurekaRegistrar(SettingsService settingsService) {
+        this.settingsService = settingsService;
+    }
+
+
 
     public void register(MockServiceConfig config) {
         try {
+            String eurekaUrl = settingsService.getSettings().getEurekaUrl();
+            boolean preferIp = settingsService.getSettings().isPreferIpAddress();
+            
             String appName = config.getServiceName().toUpperCase();
-            String instanceId = InetAddress.getLocalHost().getHostName() + ":" + appName + ":" + config.getPort();
             String hostName = InetAddress.getLocalHost().getHostName();
             String ipAddr = InetAddress.getLocalHost().getHostAddress();
+            
+            // Use IP or hostname based on preference
+            String addressToUse = preferIp ? ipAddr : hostName;
+            String instanceId = addressToUse + ":" + appName + ":" + config.getPort();
 
             // Clean up eureka URL
             String url = eurekaUrl.endsWith("/") ? eurekaUrl : eurekaUrl + "/";
@@ -32,7 +42,7 @@ public class EurekaRegistrar {
 
             Map<String, Object> instance = new HashMap<>();
             instance.put("instanceId", instanceId);
-            instance.put("hostName", hostName);
+            instance.put("hostName", preferIp ? ipAddr : hostName);
             instance.put("app", appName);
             instance.put("ipAddr", ipAddr);
             instance.put("status", "UP");
@@ -43,9 +53,9 @@ public class EurekaRegistrar {
             instance.put("dataCenterInfo", Map.of(
                     "@class", "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
                     "name", "MyOwn"));
-            instance.put("homePageUrl", "http://" + hostName + ":" + config.getPort() + "/");
-            instance.put("statusPageUrl", "http://" + hostName + ":" + config.getPort() + "/info");
-            instance.put("healthCheckUrl", "http://" + hostName + ":" + config.getPort() + "/health");
+            instance.put("homePageUrl", "http://" + addressToUse + ":" + config.getPort() + "/");
+            instance.put("statusPageUrl", "http://" + addressToUse + ":" + config.getPort() + "/info");
+            instance.put("healthCheckUrl", "http://" + addressToUse + ":" + config.getPort() + "/health");
             instance.put("vipAddress", appName);
             instance.put("secureVipAddress", appName);
 
@@ -54,7 +64,7 @@ public class EurekaRegistrar {
 
             try {
                 restTemplate.postForObject(url, body, Void.class);
-                log.info("Registered {} with Eureka at {}", appName, url);
+                log.info("Registered {} with Eureka at {} (using {})", appName, url, preferIp ? "IP" : "hostname");
 
                 // Start heartbeat in a separate thread (simplified)
                 startHeartbeat(appName, instanceId);
@@ -67,10 +77,18 @@ public class EurekaRegistrar {
         }
     }
 
+
+
     public void deregister(MockServiceConfig config) {
         try {
+            String eurekaUrl = settingsService.getSettings().getEurekaUrl();
+            boolean preferIp = settingsService.getSettings().isPreferIpAddress();
+            
             String appName = config.getServiceName().toUpperCase();
-            String instanceId = InetAddress.getLocalHost().getHostName() + ":" + appName + ":" + config.getPort();
+            String hostName = InetAddress.getLocalHost().getHostName();
+            String ipAddr = InetAddress.getLocalHost().getHostAddress();
+            String addressToUse = preferIp ? ipAddr : hostName;
+            String instanceId = addressToUse + ":" + appName + ":" + config.getPort();
 
             String url = eurekaUrl.endsWith("/") ? eurekaUrl : eurekaUrl + "/";
             url = url + "apps/" + appName + "/" + instanceId;
@@ -82,12 +100,17 @@ public class EurekaRegistrar {
         }
     }
 
+
+
     private void startHeartbeat(String appName, String instanceId) {
         // In a real app, we'd manage this thread better
         new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(30000);
+                    int interval = settingsService.getSettings().getHeartbeatIntervalSeconds();
+                    Thread.sleep(interval * 1000L);
+                    
+                    String eurekaUrl = settingsService.getSettings().getEurekaUrl();
                     String url = eurekaUrl.endsWith("/") ? eurekaUrl : eurekaUrl + "/";
                     url = url + "apps/" + appName + "/" + instanceId;
                     restTemplate.put(url, null);
@@ -101,3 +124,4 @@ public class EurekaRegistrar {
         }).start();
     }
 }
+
