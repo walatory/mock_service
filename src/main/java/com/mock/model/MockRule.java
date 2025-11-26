@@ -15,4 +15,7 @@ public class MockRule {
     private Map<String, String> responseHeaders;
 
     private long delayMs; // Simulate latency
+
+    private String mode = "mock"; // "mock" or "forward"
+    private String forwardUrl; // Target URL for forwarding
 }

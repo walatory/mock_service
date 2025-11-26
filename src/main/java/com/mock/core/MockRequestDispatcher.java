@@ -18,6 +18,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.Enumeration;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 
 @Slf4j
 @Component
@@ -25,6 +31,7 @@ public class MockRequestDispatcher {
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final ExpressionParser parser = new SpelExpressionParser();
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public void dispatch(HttpServletRequest req, HttpServletResponse resp, MockServiceConfig config)
             throws IOException {
@@ -71,6 +78,11 @@ public class MockRequestDispatcher {
 
     private void handleResponse(HttpServletResponse resp, MockRule rule, HttpServletRequest req, String requestBody)
             throws IOException {
+        if ("forward".equalsIgnoreCase(rule.getMode()) && StringUtils.hasText(rule.getForwardUrl())) {
+            handleForwarding(resp, rule, req, requestBody);
+            return;
+        }
+
         if (rule.getDelayMs() > 0) {
             try {
                 Thread.sleep(rule.getDelayMs());
@@ -118,6 +130,50 @@ public class MockRequestDispatcher {
                 // Fallback to raw body
             }
             resp.getWriter().write(responseBody);
+        }
+    }
+
+    private void handleForwarding(HttpServletResponse resp, MockRule rule, HttpServletRequest req, String body) throws IOException {
+        try {
+            String targetUrl = rule.getForwardUrl();
+            // Basic support for appending path info if needed could go here, 
+            // but for now we trust the rule's forwardUrl.
+
+            HttpMethod method = HttpMethod.valueOf(req.getMethod());
+            
+            HttpHeaders headers = new HttpHeaders();
+            Enumeration<String> headerNames = req.getHeaderNames();
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                // Skip headers that are hop-by-hop or might cause issues
+                if (!headerName.equalsIgnoreCase("host") 
+                        && !headerName.equalsIgnoreCase("content-length")
+                        && !headerName.equalsIgnoreCase("transfer-encoding")) {
+                    headers.add(headerName, req.getHeader(headerName));
+                }
+            }
+            
+            HttpEntity<String> entity = new HttpEntity<>(body, headers);
+            
+            ResponseEntity<byte[]> response = restTemplate.exchange(targetUrl, method, entity, byte[].class);
+            
+            resp.setStatus(response.getStatusCode().value());
+            
+            response.getHeaders().forEach((k, v) -> {
+                // Skip some response headers if needed
+                if (!k.equalsIgnoreCase("transfer-encoding")) {
+                    v.forEach(val -> resp.addHeader(k, val));
+                }
+            });
+            
+            if (response.getBody() != null) {
+                resp.getOutputStream().write(response.getBody());
+            }
+            
+        } catch (Exception e) {
+            log.error("Forwarding failed", e);
+            resp.setStatus(500);
+            resp.getWriter().write("Forwarding failed: " + e.getMessage());
         }
     }
 }

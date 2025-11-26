@@ -1,0 +1,21 @@
+{
+    "id": "9f3e801c-e774-44f1-951e-7f5b51a1097e",
+    "serviceName": "ForwardTest",
+    "port": 9001,
+    "contextPath": "/",
+    "description": "Test Forwarding",
+    "rules": [
+        {
+            "method": "GET",
+            "urlPattern": "/httpbin/**",
+            "mode": "forward",
+            "forwardUrl": "https://httpbin.org/anything",
+            "responseStatus": 200,
+            "delayMs": 0,
+            "responseBody": "",
+            "responseHeaders": {
+                "Content-Type": "application/json"
+            }
+        }
+    ]
+}

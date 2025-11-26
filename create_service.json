@@ -1,0 +1,7 @@
+{
+  "serviceName": "ForwardTest",
+  "port": 9001,
+  "contextPath": "/",
+  "description": "Test Forwarding",
+  "rules": []
+}

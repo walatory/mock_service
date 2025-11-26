@@ -40,6 +40,18 @@
             <artifactId>hutool-all</artifactId>
             <version>5.8.25</version>
         </dependency>
+        <!-- Swagger/OpenAPI Parser -->
+        <dependency>
+            <groupId>io.swagger.parser.v3</groupId>
+            <artifactId>swagger-parser</artifactId>
+            <version>2.1.16</version>
+        </dependency>
+        <!-- JavaFaker for realistic mock data -->
+        <dependency>
+            <groupId>com.github.javafaker</groupId>
+            <artifactId>javafaker</artifactId>
+            <version>1.0.2</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

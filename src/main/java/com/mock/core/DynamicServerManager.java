@@ -34,7 +34,13 @@ public class DynamicServerManager {
         }
 
         try {
-            ServletWebServerFactory factory = new TomcatServletWebServerFactory(config.getPort());
+            TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory(config.getPort());
+
+            // Set context path if specified
+            if (config.getContextPath() != null && !config.getContextPath().equals("/")) {
+                factory.setContextPath(config.getContextPath());
+            }
+
             WebServer server = factory.getWebServer(new ServletContextInitializer() {
                 @Override
                 public void onStartup(ServletContext servletContext) throws ServletException {
