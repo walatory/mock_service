@@ -223,6 +223,17 @@
             border-radius: 50%;
         }
 
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .btn-secondary:disabled {
+            background: #bdc3c7;
+            color: #7f8c8d;
+        }
+
         .btn-float {
             position: absolute;
             bottom: 30px;
@@ -240,6 +251,21 @@
 
         .btn-float:hover {
             transform: rotate(90deg);
+        }
+
+        /* Modal Close Button */
+        .modal-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            transform: scale(1.1);
+            background: var(--primary) !important;
+            color: white !important;
         }
 
         /* Rules Grid */
@@ -321,6 +347,7 @@
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             max-height: 90vh;
             overflow-y: auto;
+            position: relative;
         }
 
         .modal-overlay.show .modal-content {
@@ -436,6 +463,61 @@
             cursor: pointer;
         }
 
+        /* Loading Spinner */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--secondary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #2ecc71;
+        }
+
+        .toast.error {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .toast.warning {
+            border-left: 4px solid #f1c40f;
+        }
+
         /* Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -474,9 +556,17 @@
             <h1>Mock<span style="color:var(--secondary)">Platform</span></h1>
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3>Services</h3>
-                <button class="btn btn-primary btn-sm" onclick="showCreateServiceModal()">
-                    <i class="fas fa-plus"></i> New
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-light btn-sm" onclick="exportConfigs()" title="Export Configurations">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="btn btn-light btn-sm" onclick="document.getElementById('importFile').click()" title="Import Configurations">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="showCreateServiceModal()">
+                        <i class="fas fa-plus"></i> New
+                    </button>
+                </div>
             </div>
             <div class="service-list" id="serviceList">
                 <!-- Services injected here -->
@@ -495,6 +585,9 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-light" onclick="editService()">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
                         <button id="btnToggle" class="btn btn-primary" onclick="toggleService()">
                             <i class="fas fa-play"></i> Start
                         </button>
@@ -533,7 +626,10 @@
     <!-- Service Modal -->
     <div class="modal-overlay" id="serviceModal">
         <div class="modal-content" style="max-width: 500px;">
-            <h2>Create Service</h2>
+            <h2 id="serviceModalTitle">Create Service</h2>
+            <button class="btn btn-light btn-sm modal-close-btn" onclick="closeModal('serviceModal')" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
             <form id="serviceForm" onsubmit="event.preventDefault(); saveService();">
                 <div class="form-group">
                     <label>Service Name</label>
@@ -553,7 +649,7 @@
                 </div>
                 <div style="text-align: right;">
                     <button type="button" class="btn btn-light" onclick="closeModal('serviceModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Service</button>
+                    <button type="submit" class="btn btn-primary" id="serviceSubmitBtn">Create Service</button>
                 </div>
             </form>
         </div>
@@ -562,7 +658,10 @@
     <!-- Rule Modal -->
     <div class="modal-overlay" id="ruleModal">
         <div class="modal-content">
-            <h2>Add Rule</h2>
+            <h2 id="ruleModalTitle">Add Rule</h2>
+            <button class="btn btn-light btn-sm modal-close-btn" onclick="closeModal('ruleModal')" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
             <form id="ruleForm" onsubmit="event.preventDefault(); saveRule();">
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
                     <div class="form-group">
@@ -613,7 +712,7 @@
 
                 <div style="text-align: right; margin-top: 20px;">
                     <button type="button" class="btn btn-light" onclick="closeModal('ruleModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Rule</button>
+                    <button type="submit" class="btn btn-primary" id="ruleSubmitBtn">Save Rule</button>
                 </div>
             </form>
         </div>
@@ -623,6 +722,9 @@
     <div class="modal-overlay" id="swaggerModal">
         <div class="modal-content" style="max-width: 900px;">
             <h2><i class="fas fa-file-import"></i> Import from Swagger</h2>
+            <button class="btn btn-light btn-sm modal-close-btn" onclick="closeModal('swaggerModal')" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
 
             <div class="form-group">
                 <label>Swagger URL</label>
@@ -676,6 +778,9 @@
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content" style="max-width: 600px;">
             <h2><i class="fas fa-cogs"></i> Settings</h2>
+            <button class="btn btn-light btn-sm modal-close-btn" onclick="closeModal('settingsModal')" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
             <form id="settingsForm" onsubmit="event.preventDefault(); saveSettings();">
                 <div class="form-group">
                     <label>Eureka URL</label>
@@ -738,12 +843,32 @@
         let services = [];
         let currentServiceId = null;
         let swaggerEndpoints = [];
+        let editingServiceId = null;
+        let editingRuleIndex = null;
 
         async function loadServices() {
             const res = await fetch('/api/services');
             services = await res.json();
             renderServiceList();
             if (currentServiceId) selectService(currentServiceId);
+        }
+
+        function updateServiceActionButtons(enabled) {
+            // Get all service detail related buttons
+            const buttons = [
+                document.querySelector('button[onclick="editService()"]'),
+                document.getElementById('btnToggle'),
+                document.querySelector('button[onclick="deleteService()"]'),
+                document.querySelector('button[onclick="showSwaggerImportModal()"]'),
+                document.querySelector('button[onclick="showAddRuleModal()"]'),
+                document.querySelector('button.btn-float[onclick="showAddRuleModal()"]') // Float button
+            ];
+
+            buttons.forEach(button => {
+                if (button) {
+                    button.disabled = !enabled;
+                }
+            });
         }
 
         function renderServiceList() {
@@ -757,6 +882,11 @@
                 </div>
             </div>
         `).join('');
+
+            // If no service is selected, disable action buttons
+            if (!currentServiceId) {
+                updateServiceActionButtons(false);
+            }
         }
 
         function selectService(id) {
@@ -783,16 +913,27 @@
                 btnToggle.onclick = () => startService(id);
             }
 
+            // Enable all service-related buttons
+            updateServiceActionButtons(true);
+
             const ruleList = document.getElementById('ruleList');
-            ruleList.innerHTML = (service.rules || []).map(r => {
+            ruleList.innerHTML = (service.rules || []).map((r, index) => {
                 const isForward = r.mode === 'forward';
                 return `
             <div class="rule-card">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span class="method-badge method-${r.method}">${r.method}</span>
-                    <span style="font-weight: bold; color: #7f8c8d;">
-                        ${isForward ? '<i class="fas fa-share"></i> Forward' : r.responseStatus}
-                    </span>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <span style="font-weight: bold; color: #7f8c8d;">
+                            ${isForward ? '<i class="fas fa-share"></i> Forward' : r.responseStatus}
+                        </span>
+                        <button class="btn btn-light btn-sm btn-icon" onclick="editRule(${index})" title="Edit Rule">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteRule(${index})" title="Delete Rule">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
                 <div style="font-family: monospace; background: #f8f9fa; padding: 5px; border-radius: 4px; margin-bottom: 10px;">
                     ${r.urlPattern || '*'}
@@ -806,15 +947,88 @@
 
         // Modal Functions
         function showCreateServiceModal() {
+            editingServiceId = null;
             document.getElementById('serviceForm').reset();
+            document.getElementById('serviceModalTitle').innerText = 'Create Service';
+            document.getElementById('serviceSubmitBtn').innerText = 'Create Service';
+            document.getElementById('serviceModal').classList.add('show');
+        }
+
+        function editService() {
+            if (!currentServiceId) return;
+            
+            const service = services.find(s => s.id === currentServiceId);
+            if (!service) return;
+
+            editingServiceId = currentServiceId;
+            
+            // Fill form with current service data
+            document.getElementById('sName').value = service.serviceName || '';
+            document.getElementById('sPort').value = service.port || '';
+            document.getElementById('sContext').value = service.contextPath || '/';
+            document.getElementById('sDesc').value = service.description || '';
+            
+            // Update modal for editing
+            document.getElementById('serviceModalTitle').innerText = 'Edit Service';
+            document.getElementById('serviceSubmitBtn').innerText = 'Update Service';
             document.getElementById('serviceModal').classList.add('show');
         }
 
         function showAddRuleModal() {
+            editingRuleIndex = null;
             document.getElementById('ruleForm').reset();
             if (editor) editor.setValue('{\n  "status": "ok"\n}');
+            document.getElementById('ruleModalTitle').innerText = 'Add Rule';
+            document.getElementById('ruleSubmitBtn').innerText = 'Save Rule';
             toggleRuleMode();
             document.getElementById('ruleModal').classList.add('show');
+        }
+
+        function editRule(index) {
+            if (!currentServiceId) return;
+            
+            const service = services.find(s => s.id === currentServiceId);
+            if (!service || !service.rules || index >= service.rules.length) return;
+
+            const rule = service.rules[index];
+            editingRuleIndex = index;
+            
+            // Fill form with rule data
+            document.getElementById('rMethod').value = rule.method || 'GET';
+            document.getElementById('rUrl').value = rule.urlPattern || '';
+            document.getElementById('rMode').value = rule.mode || 'mock';
+            document.getElementById('rForwardUrl').value = rule.forwardUrl || '';
+            document.getElementById('rStatus').value = rule.responseStatus || 200;
+            document.getElementById('rDelay').value = rule.delayMs || 0;
+            
+            if (editor) {
+                editor.setValue(rule.responseBody || '{\n  "status": "ok"\n}');
+            }
+            
+            // Update modal for editing
+            document.getElementById('ruleModalTitle').innerText = 'Edit Rule';
+            document.getElementById('ruleSubmitBtn').innerText = 'Update Rule';
+            toggleRuleMode();
+            document.getElementById('ruleModal').classList.add('show');
+        }
+
+        async function deleteRule(index) {
+            if (!currentServiceId) return;
+            
+            if (!confirm('Are you sure you want to delete this rule?')) return;
+            
+            const service = services.find(s => s.id === currentServiceId);
+            if (!service || !service.rules || index >= service.rules.length) return;
+
+            service.rules.splice(index, 1);
+
+            await fetch(`/api/services/${currentServiceId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(service)
+            });
+            
+            loadServices();
         }
 
         function showSwaggerImportModal() {
@@ -837,12 +1051,27 @@
                 rules: []
             };
 
-            await fetch('/api/services', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            if (editingServiceId) {
+                // Update existing service
+                const service = services.find(s => s.id === editingServiceId);
+                data.rules = service.rules || [];
+                
+                await fetch(`/api/services/${editingServiceId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // Create new service
+                await fetch('/api/services', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            }
+            
             closeModal('serviceModal');
+            editingServiceId = null;
             loadServices();
         }
 
@@ -863,7 +1092,14 @@
                 };
 
                 if (!service.rules) service.rules = [];
-                service.rules.push(rule);
+                
+                if (editingRuleIndex !== null) {
+                    // Update existing rule
+                    service.rules[editingRuleIndex] = rule;
+                } else {
+                    // Add new rule
+                    service.rules.push(rule);
+                }
 
                 await fetch(`/api/services/${currentServiceId}`, {
                     method: 'PUT',
@@ -871,6 +1107,7 @@
                     body: JSON.stringify(service)
                 });
                 closeModal('ruleModal');
+                editingRuleIndex = null;
                 loadServices();
             } catch (e) {
                 console.error(e);
@@ -894,6 +1131,7 @@
             currentServiceId = null;
             document.getElementById('serviceDetail').style.display = 'none';
             document.getElementById('emptyState').style.display = 'flex';
+            updateServiceActionButtons(false); // Disable action buttons
             loadServices();
         }
 
@@ -922,7 +1160,7 @@
                 body: JSON.stringify(settings)
             });
             closeModal('settingsModal');
-            alert('Settings saved!');
+            showToast('Settings saved successfully!', 'success');
         }
 
         function toggleRuleMode() {
@@ -1050,9 +1288,103 @@
             return { message: "success", data: null };
         }
 
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 
+                         type === 'error' ? 'fa-exclamation-circle' : 
+                         'fa-exclamation-triangle';
+            
+            toast.innerHTML = `
+                <i class="fas ${icon}" style="color: ${type === 'success' ? '#2ecc71' : 
+                                                 type === 'error' ? '#e74c3c' : 
+                                                 '#f1c40f'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // Import/Export Functions
+        async function exportConfigs() {
+            try {
+                const response = await fetch('/api/services/export');
+                const configs = await response.json();
+                
+                // Create and download JSON file
+                const dataStr = JSON.stringify(configs, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `mock-configs-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                showToast('Configuration exported successfully!', 'success');
+            } catch (e) {
+                console.error('Failed to export configs:', e);
+                showToast('Failed to export configurations: ' + e.message, 'error');
+            }
+        }
+
+        async function importConfigs(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const configs = JSON.parse(text);
+                
+                if (!Array.isArray(configs)) {
+                    throw new Error('Invalid configuration file format');
+                }
+                
+                if (!confirm(`This will import ${configs.length} service(s) and may overwrite existing configurations. Continue?`)) {
+                    return;
+                }
+                
+                await fetch('/api/services/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(configs)
+                });
+                
+                showToast('Configuration imported successfully!', 'success');
+                loadServices();
+            } catch (e) {
+                console.error('Failed to import configs:', e);
+                showToast('Failed to import configurations: ' + e.message, 'error');
+            }
+            
+            // Reset file input
+            event.target.value = '';
+        }
+
         // Initial Load
-        loadServices();
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initially disable all service action buttons
+            updateServiceActionButtons(false);
+            loadServices();
+        });
     </script>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importConfigs(event)">
 </body>
 
 </html>

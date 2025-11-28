@@ -46,4 +46,20 @@ public class ConfigController {
     public void stop(@PathVariable String id) {
         configService.stopService(id);
     }
+
+    @GetMapping("/export")
+    public List<MockServiceConfig> export() {
+        return configService.getAllServices();
+    }
+
+    @PostMapping("/import")
+    public void importConfigs(@RequestBody List<MockServiceConfig> configs) {
+        for (MockServiceConfig config : configs) {
+            if (config.getId() != null) {
+                configService.updateService(config);
+            } else {
+                configService.createService(config);
+            }
+        }
+    }
 }
